@@ -4,7 +4,7 @@ export const DepartmentViewPage = () => {
   console.log('DepartmentViewPage rendered');
   return (
     <div className="w-full h-full">
-      <DepartmentViewGraph env="burmes-dev" />
+      <DepartmentViewGraph env="fmmmes-dev" />
     </div>
   );
 };

@@ -16,13 +16,14 @@ import { SubprocessNode } from './nodes/SubprocessNode';
 import { ResourceNode } from './nodes/ResourceNode';
 import { AuthService } from '../../services/authService';
 import { IoTService } from '../../services/iotService';
+import { mainProcesses, type Subprocess } from '../../data/hierarchicalProcessData';
 import { Filter, X, Lock, Unlock } from 'lucide-react';
 
 const ENV_CONFIG = {
-  'burmes-dev': {
-    baseUrl: 'https://burmes-service.unsdev.glidewellengineering.com',
+  'fmmmes-dev': {
+    baseUrl: 'https://fmmmes-service.unsdev.glidewellengineering.com',
     clientId: '6l2ch9ogih7g34dpdqn8h105t6',
-    mesType: 'BurMES',
+    mesType: 'FmmMES',
   },
   'fmmmes-dev': {
     baseUrl: 'https://fmmmes-service.unsdev.glidewellengineering.com',
@@ -54,48 +55,94 @@ interface ProcessDetail {
   Data: any[];
 }
 
+interface ActivityNode {
+  activityId: string;
+  activityName: string;
+  partNumber: string;
+  processId: string;
+  nodeId: string;
+  resources: string[];
+}
+
 // Custom node for subprocess visualization
 const CustomSubprocessNode = ({ data }: { data: any }) => {
   const detailLevel = data.viewLevel || 'condensed';
   
   return (
-    <div className="relative group">
-      <Handle type="target" position={Position.Top} />
-      <Handle type="source" position={Position.Bottom} />
-      {detailLevel === 'condensed' ? (
-        <div className="px-4 py-3 rounded-lg border-2 border-green-600 bg-white shadow-sm hover:shadow-md transition-all w-[200px]">
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <span className="text-xs font-bold px-2 py-0.5 rounded bg-green-100 text-green-700">
-              {data.processId}
-            </span>
+    <div className="relative flex items-center gap-3">
+      {/* Central connection point */}
+      <div className="relative">
+        <Handle type="target" position={Position.Top} id="target-top" style={{ top: -4, left: '50%', transform: 'translateX(-50%)', width: '8px', height: '8px', background: '#10b981', border: '2px solid white' }} />
+        <Handle type="source" position={Position.Bottom} id="source-bottom" style={{ bottom: -4, left: '50%', transform: 'translateX(-50%)', width: '8px', height: '8px', background: '#10b981', border: '2px solid white' }} />
+        <Handle type="target" position={Position.Left} id="target-left" style={{ left: -4, top: '50%', transform: 'translateY(-50%)', width: '8px', height: '8px', background: '#10b981', border: '2px solid white' }} />
+        <Handle type="source" position={Position.Right} id="source-right" style={{ right: -4, top: '50%', transform: 'translateY(-50%)', width: '8px', height: '8px', background: '#10b981', border: '2px solid white' }} />
+        
+        {/* Connection circle */}
+        <div className="w-4 h-4 rounded-full border-2 border-green-600 bg-green-100 shadow-sm" />
+      </div>
+      
+      {/* Info card to the right */}
+      <div className="pointer-events-auto">
+        {detailLevel === 'condensed' ? (
+          <div className="px-4 py-2 rounded-lg border-2 border-green-600 bg-white shadow-sm hover:shadow-md transition-all w-[200px]">
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <span className="text-xs font-bold px-2 py-0.5 rounded bg-green-100 text-green-700">
+                {data.processId}
+              </span>
+            </div>
+            <div className="text-sm font-medium text-gray-800 line-clamp-2">{data.description}</div>
           </div>
-          <div className="text-sm font-medium text-gray-800 line-clamp-2">{data.description}</div>
+        ) : detailLevel === 'medium' ? (
+          <div className="px-4 py-3 rounded-lg border-2 border-green-600 bg-white shadow-md hover:shadow-lg transition-all w-[240px]">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="text-xs font-bold px-2 py-1 rounded bg-green-100 text-green-700">
+                Process {data.processId}
+              </span>
+              <span className="text-xs text-gray-400">{data.dataCount} steps</span>
+            </div>
+            <div className="text-sm font-medium text-gray-800 mb-1 line-clamp-2">{data.description}</div>
+          </div>
+        ) : (
+          <div className="px-5 py-4 rounded-lg border-2 border-green-600 bg-white shadow-lg hover:shadow-xl transition-all w-[280px]">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="text-sm font-bold px-2.5 py-1 rounded bg-green-100 text-green-700">
+                Process {data.processId}
+              </span>
+              <span className="text-xs text-gray-400">{data.dataCount} steps</span>
+            </div>
+            <div className="text-sm font-medium text-gray-800 mb-2">{data.description}</div>
+            <div className="flex items-center justify-between text-xs border-t border-gray-200 pt-2">
+              <span className="text-gray-500">Operator:</span>
+              <span className="font-medium text-gray-700">{data.operatorId}</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Shared resource/activity node
+const SharedResourceNode = ({ data }: { data: any }) => {
+  return (
+    <div className="relative flex items-center gap-3">
+      {/* Central connection point */}
+      <div className="relative">
+        <Handle type="target" position={Position.Top} id="target-top" style={{ top: -4, left: '50%', transform: 'translateX(-50%)', width: '8px', height: '8px', background: '#9333ea', border: '2px solid white' }} />
+        <Handle type="source" position={Position.Bottom} id="source-bottom" style={{ bottom: -4, left: '50%', transform: 'translateY(-50%)', width: '8px', height: '8px', background: '#9333ea', border: '2px solid white' }} />
+        <Handle type="target" position={Position.Left} id="target-left" style={{ left: -4, top: '50%', transform: 'translateY(-50%)', width: '8px', height: '8px', background: '#9333ea', border: '2px solid white' }} />
+        <Handle type="source" position={Position.Right} id="source-right" style={{ right: -4, top: '50%', transform: 'translateY(-50%)', width: '8px', height: '8px', background: '#9333ea', border: '2px solid white' }} />
+        
+        {/* Connection circle */}
+        <div className="w-4 h-4 rounded-full border-2 border-purple-600 bg-purple-100 shadow-sm" />
+      </div>
+      
+      {/* Info card to the right */}
+      <div className="pointer-events-auto px-3 py-2 rounded-lg border-2 border-purple-400 bg-purple-50 shadow-sm hover:shadow-md transition-all">
+        <div className="text-xs font-bold text-purple-700 whitespace-nowrap">
+          {data.name}
         </div>
-      ) : detailLevel === 'medium' ? (
-        <div className="px-4 py-3 rounded-lg border-2 border-green-600 bg-white shadow-md hover:shadow-lg transition-all w-[240px]">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-xs font-bold px-2 py-1 rounded bg-green-100 text-green-700">
-              Process {data.processId}
-            </span>
-            <span className="text-xs text-gray-400">{data.dataCount} steps</span>
-          </div>
-          <div className="text-sm font-medium text-gray-800 mb-1 line-clamp-2">{data.description}</div>
-        </div>
-      ) : (
-        <div className="px-5 py-4 rounded-lg border-2 border-green-600 bg-white shadow-lg hover:shadow-xl transition-all w-[280px]">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-sm font-bold px-2.5 py-1 rounded bg-green-100 text-green-700">
-              Process {data.processId}
-            </span>
-            <span className="text-xs text-gray-400">{data.dataCount} steps</span>
-          </div>
-          <div className="text-sm font-medium text-gray-800 mb-2">{data.description}</div>
-          <div className="flex items-center justify-between text-xs border-t border-gray-200 pt-2">
-            <span className="text-gray-500">Operator:</span>
-            <span className="font-medium text-gray-700">{data.operatorId}</span>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };
@@ -104,15 +151,17 @@ const nodeTypes = {
   subprocessNode: SubprocessNode,
   resourceNode: ResourceNode,
   customSubprocessNode: CustomSubprocessNode,
+  sharedResourceNode: SharedResourceNode,
 };
 
 const ActivityViewGraph: React.FC = () => {
-  const [selectedEnvironment, setSelectedEnvironment] = useState<EnvKey>('burmes-dev');
+  const [selectedEnvironment, setSelectedEnvironment] = useState<EnvKey>('fmmmes-dev');
   const [availableParts, setAvailableParts] = useState<ProcessDefinition[]>([]);
   const [selectedParts, setSelectedParts] = useState<string[]>([]);
   const [loadedProcesses, setLoadedProcesses] = useState<Map<string, Record<string, ProcessDetail>>>(new Map());
   const [isFilterOpen, setIsFilterOpen] = useState(true);
   const [viewLevel, setViewLevel] = useState<'condensed' | 'medium' | 'full'>('condensed');
+  const [viewMode, setViewMode] = useState<'process' | 'resource'>('process');
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [selectedNodeInfo, setSelectedNodeInfo] = useState<any>(null);
   const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
@@ -205,103 +254,254 @@ const ActivityViewGraph: React.FC = () => {
     const newNodes: Node[] = [];
     const newEdges: Edge[] = [];
     
-    let columnIndex = 0;
-    const columnWidth = viewLevel === 'full' ? 320 : viewLevel === 'medium' ? 280 : 240;
-    const verticalSpacing = 180;
-    const startY = 100;
+    if (viewMode === 'process') {
+      // PROCESS VIEW: Simple sequential flow
+      let columnIndex = 0;
+      const columnWidth = viewLevel === 'full' ? 320 : viewLevel === 'medium' ? 280 : 240;
+      const verticalSpacing = 180;
+      const startY = 100;
 
-    selectedParts.forEach(partNumber => {
-      const processes = loadedProcesses.get(partNumber);
-      if (!processes) return;
+      selectedParts.forEach(partNumber => {
+        const processes = loadedProcesses.get(partNumber);
+        if (!processes) return;
 
-      const processEntries = Object.entries(processes);
-      const xPosition = columnIndex * columnWidth + 100;
+        const processEntries = Object.entries(processes);
+        const xPosition = columnIndex * columnWidth + 100;
 
-      // Add part number label node at the top
-      const partInfo = availableParts.find(p => p.PartNumber === partNumber);
-      
-      const labelContent = viewLevel === 'condensed' ? (
-        <div className="font-semibold text-sm text-gray-800">
-          Part {partNumber}
-        </div>
-      ) : viewLevel === 'medium' ? (
-        <div>
-          <div className="font-semibold text-base text-gray-800">Part {partNumber}</div>
-          {partInfo && (
-            <div className="text-xs text-gray-600 mt-1 line-clamp-1">{partInfo.Description}</div>
-          )}
-        </div>
-      ) : (
-        <div>
-          <div className="font-bold text-lg text-gray-900">Part {partNumber}</div>
-          {partInfo && (
-            <div className="text-sm text-gray-600 mt-1">{partInfo.Description}</div>
-          )}
-          {partInfo && (
-            <div className="text-xs text-gray-500 mt-1">Version {partInfo.Version}</div>
-          )}
-        </div>
-      );
-      
-      newNodes.push({
-        id: `label-${partNumber}`,
-        type: 'default',
-        position: { x: xPosition, y: 20 },
-        data: { 
-          label: labelContent
-        },
-        draggable: false,
-        selectable: false,
+        // Add part number label
+        const partInfo = availableParts.find(p => p.PartNumber === partNumber);
+        const labelContent = viewLevel === 'condensed' ? (
+          <div className="font-semibold text-sm text-gray-800">Part {partNumber}</div>
+        ) : viewLevel === 'medium' ? (
+          <div>
+            <div className="font-semibold text-base text-gray-800">Part {partNumber}</div>
+            {partInfo && <div className="text-xs text-gray-600 mt-1 line-clamp-1">{partInfo.Description}</div>}
+          </div>
+        ) : (
+          <div>
+            <div className="font-bold text-lg text-gray-900">Part {partNumber}</div>
+            {partInfo && <div className="text-sm text-gray-600 mt-1">{partInfo.Description}</div>}
+            {partInfo && <div className="text-xs text-gray-500 mt-1">Version {partInfo.Version}</div>}
+          </div>
+        );
+        
+        newNodes.push({
+          id: `label-${partNumber}`,
+          type: 'default',
+          position: { x: xPosition, y: 20 },
+          data: { label: labelContent },
+          draggable: false,
+          selectable: false,
+        });
+
+        processEntries.forEach(([processId, processDetail], rowIndex) => {
+          const nodeId = `${partNumber}-${processId}`;
+          const yPosition = startY + (rowIndex * verticalSpacing);
+
+          newNodes.push({
+            id: nodeId,
+            type: 'customSubprocessNode',
+            position: { x: xPosition, y: yPosition },
+            data: {
+              processId,
+              description: processDetail.Description,
+              dataCount: processDetail.NumberOfData,
+              operatorId: processDetail.OperatorId,
+              timeStamp: processDetail.TimeStamp,
+              partNumber,
+              viewLevel,
+            },
+          });
+
+          // Sequential flow edges
+          if (rowIndex < processEntries.length - 1) {
+            const nextProcessId = processEntries[rowIndex + 1][0];
+            const nextNodeId = `${partNumber}-${nextProcessId}`;
+            
+            newEdges.push({
+              id: `edge-${nodeId}-to-${nextNodeId}`,
+              source: nodeId,
+              sourceHandle: 'source-bottom',
+              target: nextNodeId,
+              targetHandle: 'target-top',
+              type: 'default',
+              animated: true,
+              style: { stroke: '#10b981', strokeWidth: 2 },
+              markerEnd: {
+                type: 'arrowclosed',
+                width: 20,
+                height: 20,
+                color: '#10b981',
+              },
+            });
+          }
+        });
+
+        columnIndex++;
+      });
+    } else {
+      // RESOURCE VIEW: Show shared activities between processes across parts
+      let columnIndex = 0;
+      const columnWidth = 450;
+      const verticalSpacing = 180;
+      const startY = 100;
+      const activityOffset = 200; // Horizontal offset for activity nodes
+
+      // Build a map of all activities from hierarchicalProcessData
+      const allActivities: Subprocess[] = [];
+      mainProcesses.forEach(mainProc => {
+        allActivities.push(...mainProc.subprocesses);
       });
 
-      processEntries.forEach(([processId, processDetail], rowIndex) => {
-        const nodeId = `${partNumber}-${processId}`;
-        const yPosition = startY + (rowIndex * verticalSpacing);
+      // Group activities by shared resources
+      const resourceActivityMap = new Map<string, Subprocess[]>();
+      allActivities.forEach(activity => {
+        activity.resourceTypes.forEach(resourceType => {
+          if (!resourceActivityMap.has(resourceType)) {
+            resourceActivityMap.set(resourceType, []);
+          }
+          resourceActivityMap.get(resourceType)!.push(activity);
+        });
+      });
 
-        // Create process node
+      // Find resources shared by multiple activities (these will be our shared nodes)
+      const sharedResources = Array.from(resourceActivityMap.entries()).filter(
+        ([_, activities]) => activities.length > 1
+      );
+
+      console.log('Shared Resources Found:', sharedResources.length);
+      console.log('Resource Details:', sharedResources.map(([res, acts]) => ({
+        resource: res,
+        activityCount: acts.length,
+        activities: acts.map(a => a.name)
+      })));
+
+      selectedParts.forEach(partNumber => {
+        const processes = loadedProcesses.get(partNumber);
+        if (!processes) return;
+
+        const processEntries = Object.entries(processes);
+        const xPosition = columnIndex * columnWidth + 100;
+
+        // Add part number label
+        const partInfo = availableParts.find(p => p.PartNumber === partNumber);
+        const labelContent = viewLevel === 'condensed' ? (
+          <div className="font-semibold text-sm text-gray-800">Part {partNumber}</div>
+        ) : viewLevel === 'medium' ? (
+          <div>
+            <div className="font-semibold text-base text-gray-800">Part {partNumber}</div>
+            {partInfo && <div className="text-xs text-gray-600 mt-1 line-clamp-1">{partInfo.Description}</div>}
+          </div>
+        ) : (
+          <div>
+            <div className="font-bold text-lg text-gray-900">Part {partNumber}</div>
+            {partInfo && <div className="text-sm text-gray-600 mt-1">{partInfo.Description}</div>}
+            {partInfo && <div className="text-xs text-gray-500 mt-1">Version {partInfo.Version}</div>}
+          </div>
+        );
+        
         newNodes.push({
-          id: nodeId,
-          type: 'customSubprocessNode',
+          id: `label-${partNumber}`,
+          type: 'default',
+          position: { x: xPosition, y: 20 },
+          data: { label: labelContent },
+          draggable: false,
+          selectable: false,
+        });
+
+        // Create process nodes and assign them to activities
+        processEntries.forEach(([processId, processDetail], rowIndex) => {
+          const nodeId = `${partNumber}-${processId}`;
+          const yPosition = startY + (rowIndex * verticalSpacing);
+
+          newNodes.push({
+            id: nodeId,
+            type: 'customSubprocessNode',
+            position: { x: xPosition, y: yPosition },
+            data: {
+              processId,
+              description: processDetail.Description,
+              dataCount: processDetail.NumberOfData,
+              operatorId: processDetail.OperatorId,
+              timeStamp: processDetail.TimeStamp,
+              partNumber,
+              viewLevel,
+              // Assign activity based on process index (simple mapping for demo)
+              assignedActivity: allActivities[rowIndex % allActivities.length],
+            },
+          });
+
+          // Sequential flow edges (lighter in resource view)
+          if (rowIndex < processEntries.length - 1) {
+            const nextProcessId = processEntries[rowIndex + 1][0];
+            const nextNodeId = `${partNumber}-${nextProcessId}`;
+            
+            newEdges.push({
+              id: `flow-${nodeId}-to-${nextNodeId}`,
+              source: nodeId,
+              sourceHandle: 'source-bottom',
+              target: nextNodeId,
+              targetHandle: 'target-top',
+              type: 'default',
+              animated: false,
+              style: { stroke: '#d1d5db', strokeWidth: 1, strokeDasharray: '3,3' },
+            });
+          }
+        });
+
+        columnIndex++;
+      });
+
+      // Create shared resource nodes
+      // Only show first 5 shared resources to keep visualization clean
+      sharedResources.slice(0, 5).forEach(([resourceType, activities], resourceIndex) => {
+        const xPosition = (selectedParts.length * columnWidth) / 2 + activityOffset;
+        const yPosition = startY + (resourceIndex * verticalSpacing);
+
+        const resourceNodeId = `resource-${resourceType}`;
+        
+        newNodes.push({
+          id: resourceNodeId,
+          type: 'sharedResourceNode',
           position: { x: xPosition, y: yPosition },
           data: {
-            processId,
-            description: processDetail.Description,
-            dataCount: processDetail.NumberOfData,
-            operatorId: processDetail.OperatorId,
-            timeStamp: processDetail.TimeStamp,
-            partNumber,
-            viewLevel,
+            name: resourceType,
+            activities: activities.map(a => a.name),
           },
         });
 
-        // Create edge to next process in sequence (vertical flow)
-        if (rowIndex < processEntries.length - 1) {
-          const nextProcessId = processEntries[rowIndex + 1][0];
-          const nextNodeId = `${partNumber}-${nextProcessId}`;
-          
-          newEdges.push({
-            id: `edge-${nodeId}-to-${nextNodeId}`,
-            source: nodeId,
-            target: nextNodeId,
-            type: 'default',
-            animated: true,
-            style: { stroke: '#10b981', strokeWidth: 2 },
-            markerEnd: {
-              type: 'arrowclosed',
-              width: 20,
-              height: 20,
-              color: '#10b981',
-            },
-          });
-        }
-      });
+        // Connect processes to this shared resource if they use activities that share this resource
+        selectedParts.forEach(partNumber => {
+          const processes = loadedProcesses.get(partNumber);
+          if (!processes) return;
 
-      columnIndex++;
-    });
+          const processEntries = Object.entries(processes);
+          
+          processEntries.forEach(([processId], rowIndex) => {
+            const nodeId = `${partNumber}-${processId}`;
+            const assignedActivity = allActivities[rowIndex % allActivities.length];
+            
+            // Check if this process's activity uses this resource
+            if (assignedActivity.resourceTypes.includes(resourceType)) {
+              newEdges.push({
+                id: `resource-${nodeId}-to-${resourceNodeId}`,
+                source: nodeId,
+                sourceHandle: 'source-right',
+                target: resourceNodeId,
+                targetHandle: 'target-left',
+                type: 'smoothstep',
+                style: { stroke: '#9333ea', strokeWidth: 2 },
+                animated: true,
+              });
+            }
+          });
+        });
+      });
+    }
 
     setNodes(newNodes);
     setEdges(newEdges);
-  }, [selectedParts, loadedProcesses, viewLevel, availableParts, setNodes, setEdges]);
+  }, [selectedParts, loadedProcesses, viewLevel, viewMode, availableParts, setNodes, setEdges]);
 
   // Get connected nodes for hover highlighting
   const getConnectedElements = useCallback((nodeId: string) => {
@@ -426,6 +626,33 @@ const ActivityViewGraph: React.FC = () => {
             >
               None
             </button>
+          </div>
+
+          {/* View Mode Toggle */}
+          <div className="px-3 py-3 border-b border-gray-200">
+            <label className="text-xs font-medium text-gray-600 mb-1.5 block text-center">View Mode</label>
+            <div className="flex gap-1 bg-gray-100 rounded-md p-1">
+              <button
+                onClick={() => setViewMode('process')}
+                className={`flex-1 px-3 py-1.5 text-xs font-medium rounded transition-all ${
+                  viewMode === 'process'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Process Flow
+              </button>
+              <button
+                onClick={() => setViewMode('resource')}
+                className={`flex-1 px-3 py-1.5 text-xs font-medium rounded transition-all ${
+                  viewMode === 'resource'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Resource View
+              </button>
+            </div>
           </div>
 
           {/* Layout Type */}

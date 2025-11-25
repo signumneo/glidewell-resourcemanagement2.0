@@ -4,9 +4,9 @@ import type { AuthState, User } from '../types/auth';
 import { AuthService } from '../services/authService';
 
 const ENV_CONFIG = {
-  baseUrl: 'https://burmes-service.unsdev.glidewellengineering.com',
-  clientId: '6l2ch9ogih7g34dpdqn8h105t6',
-  mesType: 'BurMES',
+  baseUrl: 'https://fmmmes-service.unsdev.glidewellengineering.com',
+  clientId: '5o44pb3bp05kejsbd6lro327bl',
+  mesType: 'FmmMES',
 };
 
 const authService = new AuthService();

@@ -17,10 +17,10 @@ import { IoTService } from '../../services/iotService';
 import { Filter, X, Lock, Unlock } from 'lucide-react';
 
 const ENV_CONFIG = {
-  'burmes-dev': {
-    baseUrl: 'https://burmes-service.unsdev.glidewellengineering.com',
+  'fmmmes-dev': {
+    baseUrl: 'https://fmmmes-service.unsdev.glidewellengineering.com',
     clientId: '6l2ch9ogih7g34dpdqn8h105t6',
-    mesType: 'BurMES',
+    mesType: 'FmmMES',
   },
   'fmmmes-dev': {
     baseUrl: 'https://fmmmes-service.unsdev.glidewellengineering.com',
@@ -149,7 +149,7 @@ const nodeTypes = {
   subprocessNode: SubprocessNode,
 };
 
-const DepartmentViewGraphInner = ({ env = 'burmes-dev' as EnvKey }) => {
+const DepartmentViewGraphInner = ({ env = 'fmmmes-dev' as EnvKey }) => {
   const [allParts, setAllParts] = useState<ProcessDefinition[]>([]);
   const [selectedParts, setSelectedParts] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(true);
