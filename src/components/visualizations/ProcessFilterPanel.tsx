@@ -41,22 +41,21 @@ export const ProcessFilterPanel = memo(({
       </div>
 
       <div className="px-4 py-3 border-b border-gray-200">
-        <div className="flex items-center justify-between text-xs">
+        <div className="flex items-center justify-between text-xs mb-2">
           <span className="text-gray-500">Visible</span>
           <span className="font-medium text-gray-700">{visibleNodes} / {totalNodes}</span>
         </div>
-        <div className="mt-2 h-1 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
           <div className="h-full bg-gray-400 transition-all duration-300" style={{ width: `${(visibleNodes / totalNodes) * 100}%` }} />
         </div>
-      </div>
-
-      <div className="px-4 py-3 border-b border-gray-200 flex gap-2">
-        <button onClick={() => onToggleAll(true)} disabled={allEnabled} className="flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all disabled:opacity-30 text-gray-600 hover:bg-gray-50 focus:outline-none">
-          <Eye className="w-3.5 h-3.5 inline mr-1.5" /> All
-        </button>
-        <button onClick={() => onToggleAll(false)} disabled={!someEnabled} className="flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all disabled:opacity-30 text-gray-600 hover:bg-gray-50 focus:outline-none">
-          <EyeOff className="w-3.5 h-3.5 inline mr-1.5" /> None
-        </button>
+        <div className="flex gap-2 mt-2">
+          <button onClick={() => onToggleAll(true)} disabled={allEnabled} className="flex-1 px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded transition-all disabled:opacity-30 focus:outline-none">
+            <Eye className="w-3 h-3 inline mr-1" /> All
+          </button>
+          <button onClick={() => onToggleAll(false)} disabled={!someEnabled} className="flex-1 px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded transition-all disabled:opacity-30 focus:outline-none">
+            <EyeOff className="w-3 h-3 inline mr-1" /> None
+          </button>
+        </div>
       </div>
 
       <div className="px-3 py-2 max-h-[400px] overflow-y-auto">

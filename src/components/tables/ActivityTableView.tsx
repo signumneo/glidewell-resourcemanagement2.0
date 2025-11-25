@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
-import { Table, Button, Input, Modal, Form, Select, InputNumber, Tag, Space } from 'antd';
+import { Table, Button, Input, Modal, Form, Select, InputNumber, Tag, Space, message } from 'antd';
 import { Plus, Pencil, Trash2, Search } from 'lucide-react';
-import { mainProcesses, globalResources, type Subprocess } from '../../data/hierarchicalProcessData';
+import { globalResources, type Subprocess } from '../../data/hierarchicalProcessData';
+import { useProcessStore } from '../../store/processStore';
 
 export const ActivityTableView: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [selectedMainProcess, setSelectedMainProcess] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSubprocess, setEditingSubprocess] = useState<Subprocess | null>(null);
+  const [editingMainProcessId, setEditingMainProcessId] = useState<string>('');
   const [pageSize, setPageSize] = useState(20);
   const [form] = Form.useForm();
+
+  const { mainProcesses, addSubprocess, updateSubprocess, deleteSubprocess } = useProcessStore();
 
   // Flatten all subprocesses with their main process info
   const allSubprocesses = mainProcesses.flatMap(mp =>
@@ -21,7 +25,7 @@ export const ActivityTableView: React.FC = () => {
     }))
   );
 
-  // Filter subprocesses
+  // Filter subprocessesddddddddddddddddddddddddddddd
   const filteredData = allSubprocesses.filter(sp => {
     const matchesSearch = sp.name.toLowerCase().includes(searchText.toLowerCase()) ||
                          sp.id.toLowerCase().includes(searchText.toLowerCase());
@@ -37,6 +41,7 @@ export const ActivityTableView: React.FC = () => {
 
   const handleEdit = (record: typeof allSubprocesses[0]) => {
     setEditingSubprocess(record);
+    setEditingMainProcessId(record.mainProcessId);
     form.setFieldsValue({
       name: record.name,
       description: record.description,
@@ -54,8 +59,8 @@ export const ActivityTableView: React.FC = () => {
       okText: 'Delete',
       okType: 'danger',
       onOk: () => {
-        // TODO: Implement delete logic
-        console.log('Delete:', record.id);
+        deleteSubprocess(record.mainProcessId, record.id);
+        message.success('Subprocess deleted successfully');
       },
     });
   };
@@ -63,23 +68,37 @@ export const ActivityTableView: React.FC = () => {
   const handleModalOk = () => {
     form.validateFields().then(values => {
       if (editingSubprocess) {
-        // TODO: Implement update logic
-        console.log('Update:', editingSubprocess.id, values);
+        // Update existing subprocess
+        updateSubprocess(editingMainProcessId, editingSubprocess.id, {
+          name: values.name,
+          description: values.description,
+          duration: values.duration,
+          resourceTypes: values.resourceTypes,
+        });
+        message.success('Subprocess updated successfully');
       } else {
-        // TODO: Implement create logic
-        console.log('Create:', values);
+        // Create new subprocess
+        addSubprocess(values.mainProcessId, {
+          name: values.name,
+          description: values.description,
+          duration: values.duration,
+          resourceTypes: values.resourceTypes,
+        });
+        message.success('Subprocess created successfully');
       }
       setIsModalOpen(false);
       form.resetFields();
+      setEditingSubprocess(null);
+      setEditingMainProcessId('');
     });
   };
 
   const columns = [
     {
-      title: 'ID',
+      title: 'Activity ID',
       dataIndex: 'id',
       key: 'id',
-      width: 100,
+      width: 350,
       render: (text: string, record: typeof allSubprocesses[0]) => (
         <Tag
           style={{
@@ -94,14 +113,14 @@ export const ActivityTableView: React.FC = () => {
       ),
     },
     {
-      title: 'Subprocess Name',
+      title: 'Activity Name',
       dataIndex: 'name',
       key: 'name',
       width: 250,
       render: (text: string) => <span className="font-medium text-gray-900">{text}</span>,
     },
     {
-      title: 'Main Process',
+      title: 'Activity Class',
       dataIndex: 'mainProcessName',
       key: 'mainProcessName',
       width: 150,
@@ -248,8 +267,8 @@ export const ActivityTableView: React.FC = () => {
         <Form form={form} layout="vertical" className="mt-4">
           <Form.Item
             name="name"
-            label="Subprocess Name"
-            rules={[{ required: true, message: 'Please enter subprocess name' }]}
+            label="Activity Name"
+            rules={[{ required: true, message: 'Please enter activity name' }]}
           >
             <Input placeholder="e.g., CAD Modeling" />
           </Form.Item>
@@ -267,7 +286,7 @@ export const ActivityTableView: React.FC = () => {
 
           <Form.Item
             name="mainProcessId"
-            label="Main Process"
+            label="Activity Class"
             rules={[{ required: true, message: 'Please select main process' }]}
           >
             <Select placeholder="Select main process">

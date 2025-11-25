@@ -5,7 +5,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  LogOut
+  LogOut,
+  Settings,
+  Cog,
+  BookOpen,
+  BarChart3
 } from 'lucide-react';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
@@ -33,8 +37,13 @@ export const DashboardLayout = () => {
   }, []);
 
   const menuItems = [
-    { key: '/dashboard?view=table', icon: Table, label: 'Table View' },
+    { key: '/dashboard?view=table', icon: Table, label: 'Activities Onboarding' },
+    { key: '/dashboard/onboarding', icon: BookOpen, label: 'Resource Onboarding', isConfig: true },
     { key: '/dashboard?view=graph', icon: Network, label: 'Graph View' },
+    { key: '/dashboard/dept-config', icon: Settings, label: 'Department View', isConfig: true },
+    { key: '/dashboard/process-config', icon: Cog, label: 'Process Config', isConfig: true },
+    { key: '/dashboard/instance-config', icon: Cog, label: 'Instance Config', isConfig: true },
+    { key: '/dashboard/analytics', icon: BarChart3, label: 'Analytics', isConfig: true },
   ];
 
   return (
@@ -108,7 +117,7 @@ export const DashboardLayout = () => {
                     navigate(item.key);
                     if (isMobile) setIsMobileMenuOpen(false);
                   }}
-                  className={`w-full flex items-center font-medium rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200 group relative border-0 bg-transparent ${
+                  className={`w-full flex items-center font-medium rounded-md transition-all duration-200 group relative text-gray-700 hover:text-gray-900 hover:bg-gray-100 bg-transparent ${
                     (isCollapsed && !isMobile) ? 'justify-center p-2.5 hover:scale-105' : 'space-x-2.5 px-2.5 py-2'
                   }`}
                 >

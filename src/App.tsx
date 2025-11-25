@@ -3,6 +3,7 @@ import { ConfigProvider, theme } from 'antd';
 import { LoginPage } from './pages/auth/LoginPage';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { ActivityViewPage } from './pages/dashboard/ActivityViewPage';
+import { DepartmentViewPage } from './pages/dashboard/DepartmentViewPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import './styles/index.css';
 
@@ -45,6 +46,11 @@ function App() {
             }
           >
             <Route index element={<ActivityViewPage />} />
+            <Route path="dept-config" element={<DepartmentViewPage />} />
+            <Route path="onboarding" element={<div className="p-8">Resource Onboarding - Coming Soon</div>} />
+            <Route path="process-config" element={<div className="p-8">Process Config - Coming Soon</div>} />
+            <Route path="instance-config" element={<div className="p-8">Instance Config - Coming Soon</div>} />
+            <Route path="analytics" element={<div className="p-8">Analytics - Coming Soon</div>} />
           </Route>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

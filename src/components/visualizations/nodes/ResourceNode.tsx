@@ -73,10 +73,10 @@ export const ResourceNode: React.FC<ResourceNodeProps> = ({ data }) => {
       {detailLevel === 'condensed' ? (
         /* Condensed line view - minimal card with key stats */
         <div
-          className="px-3 py-1.5 rounded border-l-4 bg-white shadow-sm hover:shadow-md transition-all min-w-[120px]"
+          className="px-4 py-2.5 rounded border-l-4 bg-white shadow-sm hover:shadow-md transition-all min-w-[140px]"
           style={{ borderLeftColor: color }}
         >
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-3">
             <span className="text-xs font-medium text-gray-900 truncate">{data.name}</span>
             <span className="text-xs text-gray-500">×{data.quantity}</span>
           </div>
@@ -84,10 +84,10 @@ export const ResourceNode: React.FC<ResourceNodeProps> = ({ data }) => {
       ) : detailLevel === 'medium' ? (
         /* Medium detail - more info but compact */
         <div
-          className="px-3 py-2 rounded-lg border-2 bg-white shadow-md hover:shadow-lg transition-all min-w-[140px]"
+          className="px-4 py-3 rounded-lg border-2 bg-white shadow-md hover:shadow-lg transition-all min-w-[160px]"
           style={{ borderColor: color }}
         >
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-2">
             <div
               className="p-1 rounded"
               style={{ backgroundColor: `${color}20`, color: color }}
@@ -98,39 +98,39 @@ export const ResourceNode: React.FC<ResourceNodeProps> = ({ data }) => {
               {data.type}
             </span>
           </div>
-          <div className="font-semibold text-xs text-gray-900 mb-1">{data.name}</div>
+          <div className="font-semibold text-xs text-gray-900 mb-2">{data.name}</div>
           <div className="text-xs text-gray-600">Qty: {data.quantity}</div>
         </div>
       ) : (
-        /* Full card view - zoomed in */
+        /* Full card view - zoomed in with more details */
         <div
-          className="px-4 py-3 rounded-lg border-2 bg-white shadow-md hover:shadow-lg transition-all min-w-[180px]"
+          className="px-5 py-4 rounded-lg border-2 bg-white shadow-md hover:shadow-lg transition-all w-[200px]"
           style={{ borderColor: color }}
         >
         {/* Resource type icon */}
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-3">
           <div
             className="p-1.5 rounded"
             style={{ backgroundColor: `${color}20`, color: color }}
           >
             {getTypeIcon()}
           </div>
-          <span className="text-xs font-medium text-gray-500 capitalize">
+          <span className="text-xs font-semibold text-gray-700 capitalize">
             {data.type}
           </span>
         </div>
 
         {/* Resource name */}
-        <div className="font-semibold text-sm text-gray-900 mb-2">{data.name}</div>
+        <div className="font-semibold text-sm text-gray-900 mb-3">{data.name}</div>
 
-        {/* Stats */}
-        <div className="flex items-center justify-between text-xs text-gray-600">
-          <span>Qty: {data.quantity}</span>
-          <span className="px-2 py-0.5 bg-gray-100 rounded font-medium">
-            {data.usageCount} uses
+        {/* Inventory count badge */}
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-gray-600">Inventory:</span>
+          <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+            {data.quantity}
           </span>
         </div>
-        </div>
+      </div>
       )}
     </div>
   );

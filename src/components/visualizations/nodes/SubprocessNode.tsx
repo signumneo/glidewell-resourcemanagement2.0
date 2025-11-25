@@ -39,10 +39,10 @@ export const SubprocessNode: React.FC<SubprocessNodeProps> = ({ data }) => {
       {detailLevel === 'condensed' ? (
         /* Condensed line view - minimal card with key stats */
         <div
-          className="px-3 py-1.5 rounded border-l-4 bg-white shadow-sm hover:shadow-md transition-all min-w-[140px]"
+          className="px-4 py-2.5 rounded border-l-4 bg-white shadow-sm hover:shadow-md transition-all w-[200px]"
           style={{ borderLeftColor: color }}
         >
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-3">
             <span
               className="text-xs font-bold px-1.5 py-0.5 rounded"
               style={{
@@ -59,10 +59,10 @@ export const SubprocessNode: React.FC<SubprocessNodeProps> = ({ data }) => {
       ) : detailLevel === 'medium' ? (
         /* Medium detail - more info but compact */
         <div
-          className="px-3 py-2 rounded-lg border-2 bg-white shadow-md hover:shadow-lg transition-all min-w-[160px]"
+          className="px-4 py-3 rounded-lg border-2 bg-white shadow-md hover:shadow-lg transition-all w-[200px]"
           style={{ borderColor: color }}
         >
-          <div className="flex items-center justify-between mb-1.5">
+          <div className="flex items-center justify-between mb-2.5">
             <span
               className="text-xs font-bold px-2 py-0.5 rounded"
               style={{
@@ -74,17 +74,17 @@ export const SubprocessNode: React.FC<SubprocessNodeProps> = ({ data }) => {
             </span>
             <span className="text-xs text-gray-500">{data.duration}min</span>
           </div>
-          <div className="font-semibold text-xs text-gray-900 mb-1">{data.name}</div>
+          <div className="font-semibold text-xs text-gray-900 mb-2">{data.name}</div>
           <div className="text-xs text-gray-500">{data.resourceCount} resources</div>
         </div>
       ) : (
-        /* Full card view - zoomed in */
+        /* Full card view - zoomed in with more details */
         <div
-          className="px-4 py-3 rounded-lg border-2 bg-white shadow-md hover:shadow-lg transition-all min-w-[200px]"
+          className="px-5 py-4 rounded-lg border-2 bg-white shadow-md hover:shadow-lg transition-all w-[220px]"
           style={{ borderColor: color }}
         >
           {/* Header with Activity ID */}
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-3">
             <span
               className="text-xs font-bold px-2 py-0.5 rounded"
               style={{
@@ -94,31 +94,18 @@ export const SubprocessNode: React.FC<SubprocessNodeProps> = ({ data }) => {
             >
               {data.id}
             </span>
-            <span className="text-xs text-gray-500">{data.duration}min</span>
+            <span className="text-xs font-semibold text-gray-700">{data.duration}min</span>
           </div>
 
           {/* Subprocess name */}
-          <div className="font-semibold text-sm text-gray-900 mb-1">{data.name}</div>
-
-          {/* Main process label */}
-          <div className="text-xs text-gray-500">{data.mainProcessName}</div>
+          <div className="font-semibold text-sm text-gray-900 mb-3">{data.name}</div>
 
           {/* Resource count badge */}
-          <div className="mt-2 flex items-center gap-1 text-xs text-gray-600">
-            <svg
-              className="w-3 h-3"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-              />
-            </svg>
-            <span>{data.resourceCount} resources</span>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-gray-600">Inventory:</span>
+            <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+              {data.resourceCount}
+            </span>
           </div>
         </div>
       )}

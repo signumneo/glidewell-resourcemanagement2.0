@@ -17,7 +17,7 @@ export const LoginPage = () => {
       await login(values.username, values.password);
       message.success('Login successful!');
       navigate('/dashboard');
-    } catch (error) {
+    } catch {
       message.error('Login failed. Please try again.');
     } finally {
       setLoading(false);
@@ -45,13 +45,14 @@ export const LoginPage = () => {
             layout="vertical"
           >
             <Form.Item
-              label="Username"
+              label="Email"
               name="username"
-              rules={[{ required: true, message: 'Please enter your username' }]}
+              rules={[{ required: true, message: 'Please enter your email' }]}
             >
               <Input
                 prefix={<UserOutlined className="text-gray-400" />}
-                placeholder="Enter username"
+                placeholder="Enter email"
+                type="email"
                 style={{ borderRadius: '8px' }}
               />
             </Form.Item>
@@ -87,7 +88,7 @@ export const LoginPage = () => {
           </Form>
 
           <div className="text-center text-sm text-gray-500 mt-4">
-            <Text type="secondary">Demo: any username/password</Text>
+            <Text type="secondary">Use your Glidewell email and password</Text>
           </div>
         </Card>
 
