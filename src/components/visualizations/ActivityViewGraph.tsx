@@ -14,20 +14,26 @@ import type { Node, Edge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { SubprocessNode } from './nodes/SubprocessNode';
 import { ResourceNode } from './nodes/ResourceNode';
+import { ParallelEdge } from './edges/ParallelEdge';
 import { AuthService } from '../../services/authService';
 import { IoTService } from '../../services/iotService';
-import { mainProcesses, type Subprocess } from '../../data/hierarchicalProcessData';
 import { Filter, X, Lock, Unlock } from 'lucide-react';
+
+// Subway/Tube Line Colors - Distinct colors for each part/flow
+const LINE_COLORS = [
+  '#8b5cf6', // Violet
+  '#f59e0b', // Amber
+  '#ec4899', // Pink
+  '#3b82f6', // Blue
+  '#10b981', // Emerald
+  '#ef4444', // Red
+  '#06b6d4', // Cyan
+];
 
 const ENV_CONFIG = {
   'fmmmes-dev': {
     baseUrl: 'https://fmmmes-service.unsdev.glidewellengineering.com',
     clientId: '6l2ch9ogih7g34dpdqn8h105t6',
-    mesType: 'FmmMES',
-  },
-  'fmmmes-dev': {
-    baseUrl: 'https://fmmmes-service.unsdev.glidewellengineering.com',
-    clientId: '5o44pb3bp05kejsbd6lro327bl',
     mesType: 'FmmMES',
   },
   '3dpmes-dev': {
@@ -64,63 +70,177 @@ interface ActivityNode {
   resources: string[];
 }
 
-// Custom node for subprocess visualization
-const CustomSubprocessNode = ({ data }: { data: any }) => {
+// Subway/Tube Station Node - Minimal dot with external label
+const SubwayNode = ({ data }: { data: any }) => {
+  const lineColor = data.lineColor || '#10b981';
   const detailLevel = data.viewLevel || 'condensed';
+  const isShared = data.partNumber === 'Shared';
+  const sharedLineColors = data.sharedLineColors || []; // Array of colors for shared nodes
   
   return (
-    <div className="relative flex items-center gap-3">
-      {/* Central connection point */}
-      <div className="relative">
-        <Handle type="target" position={Position.Top} id="target-top" style={{ top: -4, left: '50%', transform: 'translateX(-50%)', width: '8px', height: '8px', background: '#10b981', border: '2px solid white' }} />
-        <Handle type="source" position={Position.Bottom} id="source-bottom" style={{ bottom: -4, left: '50%', transform: 'translateX(-50%)', width: '8px', height: '8px', background: '#10b981', border: '2px solid white' }} />
-        <Handle type="target" position={Position.Left} id="target-left" style={{ left: -4, top: '50%', transform: 'translateY(-50%)', width: '8px', height: '8px', background: '#10b981', border: '2px solid white' }} />
-        <Handle type="source" position={Position.Right} id="source-right" style={{ right: -4, top: '50%', transform: 'translateY(-50%)', width: '8px', height: '8px', background: '#10b981', border: '2px solid white' }} />
-        
-        {/* Connection circle */}
-        <div className="w-4 h-4 rounded-full border-2 border-green-600 bg-green-100 shadow-sm" />
-      </div>
+    <div className="relative flex items-center justify-center">
+      {/* Invisible handles for connections */}
+      <Handle 
+        type="target" 
+        position={Position.Top} 
+        id="target-top" 
+        style={{ 
+          top: 0, 
+          left: '50%', 
+          transform: 'translateX(-50%)', 
+          width: '1px', 
+          height: '1px', 
+          background: 'transparent',
+          border: 'none',
+          opacity: 0,
+        }} 
+      />
+      <Handle 
+        type="source" 
+        position={Position.Bottom} 
+        id="source-bottom" 
+        style={{ 
+          bottom: 0, 
+          left: '50%', 
+          transform: 'translateX(-50%)', 
+          width: '1px', 
+          height: '1px', 
+          background: 'transparent',
+          border: 'none',
+          opacity: 0,
+        }} 
+      />
+      <Handle 
+        type="target" 
+        position={Position.Left} 
+        id="target-left" 
+        style={{ 
+          left: 0, 
+          top: '50%', 
+          transform: 'translateY(-50%)', 
+          width: '1px', 
+          height: '1px', 
+          background: 'transparent',
+          border: 'none',
+          opacity: 0,
+        }} 
+      />
+      <Handle 
+        type="target" 
+        position={Position.Right} 
+        id="target-right" 
+        style={{ 
+          right: 0, 
+          top: '50%', 
+          transform: 'translateY(-50%)', 
+          width: '1px', 
+          height: '1px', 
+          background: 'transparent',
+          border: 'none',
+          opacity: 0,
+        }} 
+      />
+      <Handle 
+        type="source" 
+        position={Position.Left} 
+        id="source-left" 
+        style={{ 
+          left: 0, 
+          top: '50%', 
+          transform: 'translateY(-50%)', 
+          width: '1px', 
+          height: '1px', 
+          background: 'transparent',
+          border: 'none',
+          opacity: 0,
+        }} 
+      />
+      <Handle 
+        type="source" 
+        position={Position.Right} 
+        id="source-right" 
+        style={{ 
+          right: 0, 
+          top: '50%', 
+          transform: 'translateY(-50%)', 
+          width: '1px', 
+          height: '1px', 
+          background: 'transparent',
+          border: 'none',
+          opacity: 0,
+        }} 
+      />
       
-      {/* Info card to the right */}
-      <div className="pointer-events-auto">
+      {/* Station Dot - Multiple circles for shared nodes */}
+      {isShared && sharedLineColors.length > 0 ? (
+        <div className="flex gap-0.5">
+          {sharedLineColors.map((color, idx) => (
+            <div 
+              key={idx}
+              className="rounded-full shadow-sm transition-all hover:scale-110"
+              style={{
+                width: '12px',
+                height: '12px',
+                backgroundColor: color,
+                border: '2px solid white',
+              }}
+            />
+          ))}
+        </div>
+      ) : (
+        <div 
+          className="rounded-full shadow-sm transition-all hover:scale-110"
+          style={{
+            width: '12px',
+            height: '12px',
+            backgroundColor: lineColor,
+          }}
+        />
+      )}
+      
+      {/* Label positioned to the right with gap */}
+      <div 
+        className="pointer-events-auto absolute whitespace-nowrap"
+        style={{ 
+          minWidth: '150px',
+          left: isShared && sharedLineColors.length > 0 
+            ? `${(sharedLineColors.length * 12) + (sharedLineColors.length * 2) + 20}px` 
+            : detailLevel === 'condensed' ? '36px' : detailLevel === 'medium' ? '44px' : '52px'
+        }}
+      >
         {detailLevel === 'condensed' ? (
-          <div className="px-4 py-2 rounded-lg border-2 border-green-600 bg-white shadow-sm hover:shadow-md transition-all w-[200px]">
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <span className="text-xs font-bold px-2 py-0.5 rounded bg-green-100 text-green-700">
-                {data.processId}
-              </span>
+          <div className="px-2 py-1 bg-white rounded shadow-sm border" style={{ borderColor: lineColor }}>
+            <div className="text-xs font-semibold" style={{ color: lineColor }}>
+              {data.processId}
             </div>
-            <div className="text-sm font-medium text-gray-800 line-clamp-2">{data.description}</div>
           </div>
         ) : detailLevel === 'medium' ? (
-          <div className="px-4 py-3 rounded-lg border-2 border-green-600 bg-white shadow-md hover:shadow-lg transition-all w-[240px]">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <span className="text-xs font-bold px-2 py-1 rounded bg-green-100 text-green-700">
-                Process {data.processId}
-              </span>
-              <span className="text-xs text-gray-400">{data.dataCount} steps</span>
+          <div className="px-3 py-1.5 bg-white rounded-md shadow-md border-2" style={{ borderColor: lineColor }}>
+            <div className="text-xs font-bold mb-0.5" style={{ color: lineColor }}>
+              {data.processId}
             </div>
-            <div className="text-sm font-medium text-gray-800 mb-1 line-clamp-2">{data.description}</div>
+            <div className="text-xs text-gray-600 line-clamp-1">{data.description}</div>
           </div>
         ) : (
-          <div className="px-5 py-4 rounded-lg border-2 border-green-600 bg-white shadow-lg hover:shadow-xl transition-all w-[280px]">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <span className="text-sm font-bold px-2.5 py-1 rounded bg-green-100 text-green-700">
-                Process {data.processId}
-              </span>
-              <span className="text-xs text-gray-400">{data.dataCount} steps</span>
+          <div className="px-3 py-2 bg-white rounded-md shadow-lg border-2" style={{ borderColor: lineColor }}>
+            <div className="text-sm font-bold mb-1" style={{ color: lineColor }}>
+              {data.processId}
             </div>
-            <div className="text-sm font-medium text-gray-800 mb-2">{data.description}</div>
-            <div className="flex items-center justify-between text-xs border-t border-gray-200 pt-2">
-              <span className="text-gray-500">Operator:</span>
-              <span className="font-medium text-gray-700">{data.operatorId}</span>
-            </div>
+            <div className="text-xs text-gray-700 mb-1">{data.description}</div>
+            {data.operatorId && (
+              <div className="text-xs text-gray-500">
+                Operator: {data.operatorId}
+              </div>
+            )}
           </div>
         )}
       </div>
     </div>
   );
 };
+
+// Legacy node for backward compatibility
+const CustomSubprocessNode = SubwayNode;
 
 // Shared resource/activity node
 const SharedResourceNode = ({ data }: { data: any }) => {
@@ -151,7 +271,12 @@ const nodeTypes = {
   subprocessNode: SubprocessNode,
   resourceNode: ResourceNode,
   customSubprocessNode: CustomSubprocessNode,
+  subwayNode: SubwayNode,
   sharedResourceNode: SharedResourceNode,
+};
+
+const edgeTypes = {
+  parallel: ParallelEdge,
 };
 
 const ActivityViewGraph: React.FC = () => {
@@ -161,7 +286,8 @@ const ActivityViewGraph: React.FC = () => {
   const [loadedProcesses, setLoadedProcesses] = useState<Map<string, Record<string, ProcessDetail>>>(new Map());
   const [isFilterOpen, setIsFilterOpen] = useState(true);
   const [viewLevel, setViewLevel] = useState<'condensed' | 'medium' | 'full'>('condensed');
-  const [viewMode, setViewMode] = useState<'process' | 'resource'>('process');
+  const [viewMode, setViewMode] = useState<'process' | 'activity' | 'resource'>('process');
+  const [selectedResources, setSelectedResources] = useState<string[]>([]);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [selectedNodeInfo, setSelectedNodeInfo] = useState<any>(null);
   const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
@@ -182,11 +308,235 @@ const ActivityViewGraph: React.FC = () => {
     return new IoTService(config.baseUrl, authService);
   }, [selectedEnvironment, authService]);
 
+  // Available resource types for resource view
+  const availableResourceTypes = React.useMemo(() => [
+    { id: 'station-1', name: 'Station 1', category: 'station', isShared: false },
+    { id: 'station-2', name: 'Station 2', category: 'station', isShared: true },
+    { id: 'station-3', name: 'Station 3', category: 'station', isShared: true },
+    { id: 'station-4', name: 'Station 4', category: 'station', isShared: false },
+    { id: 'operator-1', name: 'Operator 1', category: 'operator', isShared: false },
+    { id: 'operator-2', name: 'Operator 2', category: 'operator', isShared: true },
+    { id: 'operator-3', name: 'Operator 3', category: 'operator', isShared: true },
+    { id: 'operator-4', name: 'Operator 4', category: 'operator', isShared: false },
+  ], []);
+
   // Load available parts on mount and environment change
   useEffect(() => {
     const loadParts = async () => {
       setIsLoading(true);
       try {
+        // HARDCODED TEST DATA for development/testing
+        const testParts: ProcessDefinition[] = [
+          { PartNumber: '1001', Version: '1.0', Description: 'Dental Crown - Ceramic', Quantity: '50' },
+          { PartNumber: '1002', Version: '1.0', Description: 'Dental Bridge - 3-Unit', Quantity: '30' },
+          { PartNumber: '1003', Version: '1.2', Description: 'Implant Abutment - Titanium', Quantity: '100' },
+          { PartNumber: '1004', Version: '2.0', Description: 'Orthodontic Bracket Set', Quantity: '200' },
+          { PartNumber: '1005', Version: '1.5', Description: 'Veneer - Porcelain', Quantity: '75' },
+        ];
+
+        // Create mock process data for each test part with complex flows (loops, rework, branches)
+        // Parts take DIFFERENT paths to create parallel/branching flow
+        const mockProcesses = new Map<string, Record<string, ProcessDetail>>();
+        
+        testParts.forEach((part) => {
+          let processSteps: Record<string, ProcessDetail>;
+          
+          if (part.PartNumber === '1001') {
+            // Part 1001: Takes rework path at Forming (skips step 3, uses 3.5)
+            processSteps = {
+              '1': {
+                ProcessId: 1,
+                OperatorId: 101,
+                TimeStamp: new Date().toISOString(),
+                NumberOfData: 5,
+                Description: `Initial Inspection - ${part.Description}`,
+                Data: [],
+              },
+              '2': {
+                ProcessId: 2,
+                OperatorId: 102,
+                TimeStamp: new Date().toISOString(),
+                NumberOfData: 8,
+                Description: 'Material Preparation',
+                Data: [],
+              },
+              '3.5': {
+                ProcessId: 3.5,
+                OperatorId: 103,
+                TimeStamp: new Date().toISOString(),
+                NumberOfData: 8,
+                Description: 'Forming Rework',
+                Data: [],
+              },
+              '4': {
+                ProcessId: 4,
+                OperatorId: 104,
+                TimeStamp: new Date().toISOString(),
+                NumberOfData: 10,
+                Description: 'Heat Treatment',
+                Data: [],
+              },
+              '5': {
+                ProcessId: 5,
+                OperatorId: 105,
+                TimeStamp: new Date().toISOString(),
+                NumberOfData: 7,
+                Description: `Surface Finishing - ${part.Description}`,
+                Data: [],
+              },
+              '6': {
+                ProcessId: 6,
+                OperatorId: 106,
+                TimeStamp: new Date().toISOString(),
+                NumberOfData: 6,
+                Description: `Quality Control - ${part.Description}`,
+                Data: [],
+              },
+              '7': {
+                ProcessId: 7,
+                OperatorId: 107,
+                TimeStamp: new Date().toISOString(),
+                NumberOfData: 4,
+                Description: `Final Packaging - ${part.Description}`,
+                Data: [],
+              },
+            };
+          } else if (part.PartNumber === '1002') {
+            // Part 1002: Takes rework path at Surface (skips step 5, uses 5.5)
+            processSteps = {
+              '1': {
+                ProcessId: 1,
+                OperatorId: 101,
+                TimeStamp: new Date().toISOString(),
+                NumberOfData: 5,
+                Description: `Initial Inspection - ${part.Description}`,
+                Data: [],
+              },
+              '2': {
+                ProcessId: 2,
+                OperatorId: 102,
+                TimeStamp: new Date().toISOString(),
+                NumberOfData: 8,
+                Description: 'Material Preparation',
+                Data: [],
+              },
+              '3': {
+                ProcessId: 3,
+                OperatorId: 103,
+                TimeStamp: new Date().toISOString(),
+                NumberOfData: 12,
+                Description: 'Forming Process',
+                Data: [],
+              },
+              '4': {
+                ProcessId: 4,
+                OperatorId: 104,
+                TimeStamp: new Date().toISOString(),
+                NumberOfData: 10,
+                Description: 'Heat Treatment',
+                Data: [],
+              },
+              '5.5': {
+                ProcessId: 5.5,
+                OperatorId: 105,
+                TimeStamp: new Date().toISOString(),
+                NumberOfData: 6,
+                Description: 'Surface Rework',
+                Data: [],
+              },
+              '6': {
+                ProcessId: 6,
+                OperatorId: 106,
+                TimeStamp: new Date().toISOString(),
+                NumberOfData: 6,
+                Description: `Quality Control - ${part.Description}`,
+                Data: [],
+              },
+              '7': {
+                ProcessId: 7,
+                OperatorId: 107,
+                TimeStamp: new Date().toISOString(),
+                NumberOfData: 4,
+                Description: `Final Packaging - ${part.Description}`,
+                Data: [],
+              },
+            };
+          } else {
+            // Other parts: Standard flow
+            processSteps = {
+              '1': {
+                ProcessId: 1,
+                OperatorId: 101,
+                TimeStamp: new Date().toISOString(),
+                NumberOfData: 5,
+                Description: `Initial Inspection - ${part.Description}`,
+                Data: [],
+              },
+              '2': {
+                ProcessId: 2,
+                OperatorId: 102,
+                TimeStamp: new Date().toISOString(),
+                NumberOfData: 8,
+                Description: 'Material Preparation',
+                Data: [],
+              },
+              '3': {
+                ProcessId: 3,
+                OperatorId: 103,
+                TimeStamp: new Date().toISOString(),
+                NumberOfData: 12,
+                Description: 'Forming Process',
+                Data: [],
+              },
+              '4': {
+                ProcessId: 4,
+                OperatorId: 104,
+                TimeStamp: new Date().toISOString(),
+                NumberOfData: 10,
+                Description: 'Heat Treatment',
+                Data: [],
+              },
+              '5': {
+                ProcessId: 5,
+                OperatorId: 105,
+                TimeStamp: new Date().toISOString(),
+                NumberOfData: 7,
+                Description: `Surface Finishing - ${part.Description}`,
+                Data: [],
+              },
+              '6': {
+                ProcessId: 6,
+                OperatorId: 106,
+                TimeStamp: new Date().toISOString(),
+                NumberOfData: 6,
+                Description: `Quality Control - ${part.Description}`,
+                Data: [],
+              },
+              '7': {
+                ProcessId: 7,
+                OperatorId: 107,
+                TimeStamp: new Date().toISOString(),
+                NumberOfData: 4,
+                Description: `Final Packaging - ${part.Description}`,
+                Data: [],
+              },
+            };
+          }
+          
+          mockProcesses.set(part.PartNumber, processSteps);
+        });
+
+        setAvailableParts(testParts);
+        setLoadedProcesses(mockProcesses);
+        
+        // Select first 3 parts by default for testing
+        const partsToLoad = testParts.slice(0, 3).map(p => p.PartNumber);
+        setSelectedParts(partsToLoad);
+
+        // Select first 4 resources by default for resource view
+        setSelectedResources(['station-1', 'station-2', 'station-3', 'operator-1']);
+
+        /* REAL API IMPLEMENTATION (commented out for testing)
         const token = authService.getToken();
         
         if (!token) {
@@ -200,12 +550,13 @@ const ActivityViewGraph: React.FC = () => {
         const parts = Array.isArray(response.Data) ? response.Data : [];
         setAvailableParts(parts);
         
-        // Select first part by default and load its processes
+        // Select first 2 parts by default and load their processes
         if (parts.length > 0) {
-          const firstPart = parts[0].PartNumber;
-          setSelectedParts([firstPart]);
-          await loadProcessForPart(firstPart);
+          const partsToLoad = parts.slice(0, Math.min(2, parts.length)).map(p => p.PartNumber);
+          setSelectedParts(partsToLoad);
+          await Promise.all(partsToLoad.map(partNumber => loadProcessForPart(partNumber)));
         }
+        */
       } catch (error) {
         console.error('Error loading parts:', error);
       } finally {
@@ -240,12 +591,8 @@ const ActivityViewGraph: React.FC = () => {
       // Deselect part
       setSelectedParts(prev => prev.filter(p => p !== partNumber));
     } else {
-      // Select part and load its processes if not already loaded
+      // Select part (processes are already loaded in mock data)
       setSelectedParts(prev => [...prev, partNumber]);
-      
-      if (!loadedProcesses.has(partNumber)) {
-        await loadProcessForPart(partNumber);
-      }
     }
   };
 
@@ -259,7 +606,8 @@ const ActivityViewGraph: React.FC = () => {
       let columnIndex = 0;
       const columnWidth = viewLevel === 'full' ? 320 : viewLevel === 'medium' ? 280 : 240;
       const verticalSpacing = 180;
-      const startY = 100;
+      // More gap needed in detailed state as cards get bigger
+      const startY = viewLevel === 'condensed' ? 120 : viewLevel === 'medium' ? 160 : 200;
 
       selectedParts.forEach(partNumber => {
         const processes = loadedProcesses.get(partNumber);
@@ -285,10 +633,14 @@ const ActivityViewGraph: React.FC = () => {
           </div>
         );
         
+        // Dynamic y position for label based on detail level to add gap between title and nodes
+        // More gap needed in detailed state as cards get bigger
+        const labelY = viewLevel === 'condensed' ? 20 : viewLevel === 'medium' ? 10 : 0;
+        
         newNodes.push({
           id: `label-${partNumber}`,
           type: 'default',
-          position: { x: xPosition, y: 20 },
+          position: { x: xPosition, y: labelY },
           data: { label: labelContent },
           draggable: false,
           selectable: false,
@@ -339,62 +691,151 @@ const ActivityViewGraph: React.FC = () => {
 
         columnIndex++;
       });
-    } else {
-      // RESOURCE VIEW: Show shared activities between processes across parts
-      let columnIndex = 0;
+    } else if (viewMode === 'activity') {
+      // ACTIVITY VIEW: Unified nodes with parallel edges for shared connections
       const columnWidth = 450;
-      const verticalSpacing = 180;
-      const startY = 100;
-      const activityOffset = 200; // Horizontal offset for activity nodes
+      const verticalSpacing = 120;
+      // More gap needed in detailed state as cards get bigger
+      const startY = viewLevel === 'condensed' ? 120 : viewLevel === 'medium' ? 160 : 200;
 
-      // Build a map of all activities from hierarchicalProcessData
-      const allActivities: Subprocess[] = [];
-      mainProcesses.forEach(mainProc => {
-        allActivities.push(...mainProc.subprocesses);
-      });
+      // Define which rows should be shared (indices start at 0)
+      // Row 0 is always unique (first activity)
+      // Rows 1-3 are shared across parts
+      // Rows 4+ are unique again for each part
+      const SHARED_ROWS = [1, 2, 3];
 
-      // Group activities by shared resources
-      const resourceActivityMap = new Map<string, Subprocess[]>();
-      allActivities.forEach(activity => {
-        activity.resourceTypes.forEach(resourceType => {
-          if (!resourceActivityMap.has(resourceType)) {
-            resourceActivityMap.set(resourceType, []);
-          }
-          resourceActivityMap.get(resourceType)!.push(activity);
-        });
-      });
+      // Step 1: NODE UNIFICATION - Create unique nodes based on process description
+      const getNodeKey = (description: string, rowIndex: number, partNumber: string) => {
+        // If it's the first row or beyond shared rows, make it unique per part
+        if (rowIndex === 0 || !SHARED_ROWS.includes(rowIndex)) {
+          return `${partNumber}-${description.trim()}`;
+        }
+        // Otherwise, use shared key
+        return `shared-${description.trim()}`;
+      };
 
-      // Find resources shared by multiple activities (these will be our shared nodes)
-      const sharedResources = Array.from(resourceActivityMap.entries()).filter(
-        ([_, activities]) => activities.length > 1
-      );
+      const uniqueNodesMap = new Map<string, {
+        nodeId: string;
+        description: string;
+        rowIndex: number;
+        yPosition: number;
+        isShared: boolean;
+        partNumber?: string;
+        sharedParts: string[]; // Track which parts pass through this node
+      }>();
 
-      console.log('Shared Resources Found:', sharedResources.length);
-      console.log('Resource Details:', sharedResources.map(([res, acts]) => ({
-        resource: res,
-        activityCount: acts.length,
-        activities: acts.map(a => a.name)
-      })));
+      // Build a map of part flows (ordered list of descriptions per part)
+      const partFlowsMap = new Map<string, Array<{
+        processId: string;
+        description: string;
+        detail: ProcessDetail;
+        nodeKey: string;
+      }>>();
 
       selectedParts.forEach(partNumber => {
         const processes = loadedProcesses.get(partNumber);
         if (!processes) return;
 
         const processEntries = Object.entries(processes);
-        const xPosition = columnIndex * columnWidth + 100;
+        const flow = processEntries.map(([processId, detail], rowIndex) => {
+          const nodeKey = getNodeKey(detail.Description, rowIndex, partNumber);
+          return {
+            processId,
+            description: detail.Description,
+            detail,
+            nodeKey,
+          };
+        });
+        
+        partFlowsMap.set(partNumber, flow);
 
-        // Add part number label
+        // Create unified nodes and track which parts pass through them
+        flow.forEach((step, rowIndex) => {
+          if (!uniqueNodesMap.has(step.nodeKey)) {
+            const isShared = SHARED_ROWS.includes(rowIndex);
+            const nodeId = step.nodeKey.replace(/\s+/g, '-');
+            const yPosition = startY + (rowIndex * verticalSpacing);
+            
+            uniqueNodesMap.set(step.nodeKey, {
+              nodeId,
+              description: step.description,
+              rowIndex,
+              yPosition,
+              isShared,
+              partNumber: isShared ? undefined : partNumber,
+              sharedParts: [partNumber],
+            });
+          } else {
+            // Add this part to the list of parts passing through this node
+            const existingNode = uniqueNodesMap.get(step.nodeKey)!;
+            if (!existingNode.sharedParts.includes(partNumber)) {
+              existingNode.sharedParts.push(partNumber);
+            }
+          }
+        });
+      });
+
+      // Calculate positions for nodes
+      const centerX = ((selectedParts.length - 1) * columnWidth) / 2 + 100;
+
+      // Create the unified nodes
+      uniqueNodesMap.forEach((nodeInfo) => {
+        // Position: shared nodes in center, unique nodes in their part's column
+        let xPosition = centerX;
+        let nodeColor = '#6b7280'; // Gray for shared (fallback)
+        let sharedLineColors: string[] = [];
+        
+        if (nodeInfo.isShared) {
+          // For shared nodes, collect all the line colors of parts passing through
+          sharedLineColors = nodeInfo.sharedParts
+            .map(partNum => {
+              const partIdx = selectedParts.indexOf(partNum);
+              return partIdx !== -1 ? LINE_COLORS[partIdx % LINE_COLORS.length] : null;
+            })
+            .filter((color): color is string => color !== null);
+        } else if (nodeInfo.partNumber) {
+          // Find which column this part is in
+          const partIdx = selectedParts.indexOf(nodeInfo.partNumber);
+          if (partIdx !== -1) {
+            xPosition = partIdx * columnWidth + 100;
+            nodeColor = LINE_COLORS[partIdx % LINE_COLORS.length];
+          }
+        }
+
+        newNodes.push({
+          id: nodeInfo.nodeId,
+          type: 'subwayNode',
+          position: { x: xPosition, y: nodeInfo.yPosition },
+          data: {
+            processId: nodeInfo.description, // Use description as the label
+            description: nodeInfo.description,
+            dataCount: 0,
+            operatorId: 0,
+            timeStamp: '',
+            partNumber: nodeInfo.isShared ? 'Shared' : nodeInfo.partNumber,
+            viewLevel,
+            lineColor: nodeColor,
+            sharedLineColors: sharedLineColors, // Pass the array of colors for shared nodes
+          },
+        });
+      });
+
+      // Add part labels
+      selectedParts.forEach((partNumber, partIdx) => {
+        const xPosition = partIdx * columnWidth + 100;
+        const lineColor = LINE_COLORS[partIdx % LINE_COLORS.length];
         const partInfo = availableParts.find(p => p.PartNumber === partNumber);
+        
         const labelContent = viewLevel === 'condensed' ? (
-          <div className="font-semibold text-sm text-gray-800">Part {partNumber}</div>
+          <div className="font-semibold text-sm text-gray-800" style={{ color: lineColor }}>Part {partNumber}</div>
         ) : viewLevel === 'medium' ? (
           <div>
-            <div className="font-semibold text-base text-gray-800">Part {partNumber}</div>
+            <div className="font-semibold text-base text-gray-800" style={{ color: lineColor }}>Part {partNumber}</div>
             {partInfo && <div className="text-xs text-gray-600 mt-1 line-clamp-1">{partInfo.Description}</div>}
           </div>
         ) : (
           <div>
-            <div className="font-bold text-lg text-gray-900">Part {partNumber}</div>
+            <div className="font-bold text-lg text-gray-900" style={{ color: lineColor }}>Part {partNumber}</div>
             {partInfo && <div className="text-sm text-gray-600 mt-1">{partInfo.Description}</div>}
             {partInfo && <div className="text-xs text-gray-500 mt-1">Version {partInfo.Version}</div>}
           </div>
@@ -408,100 +849,336 @@ const ActivityViewGraph: React.FC = () => {
           draggable: false,
           selectable: false,
         });
+      });
 
-        // Create process nodes and assign them to activities
-        processEntries.forEach(([processId, processDetail], rowIndex) => {
-          const nodeId = `${partNumber}-${processId}`;
-          const yPosition = startY + (rowIndex * verticalSpacing);
+      // Step 2: EDGE COUNTING - Count parallel edges between node pairs
+      type EdgeKey = string;
+      const edgeCounts = new Map<EdgeKey, { total: number; current: number }>();
 
-          newNodes.push({
-            id: nodeId,
-            type: 'customSubprocessNode',
-            position: { x: xPosition, y: yPosition },
+      // First pass: Count all edges
+      selectedParts.forEach(partNumber => {
+        const flow = partFlowsMap.get(partNumber);
+        if (!flow) return;
+
+        for (let i = 0; i < flow.length - 1; i++) {
+          const currentKey = flow[i].nodeKey;
+          const nextKey = flow[i + 1].nodeKey;
+          
+          const currentNode = uniqueNodesMap.get(currentKey);
+          const nextNode = uniqueNodesMap.get(nextKey);
+          
+          if (!currentNode || !nextNode) continue;
+
+          const edgeKey = `${currentNode.nodeId}->${nextNode.nodeId}`;
+          
+          if (!edgeCounts.has(edgeKey)) {
+            edgeCounts.set(edgeKey, { total: 0, current: 0 });
+          }
+          edgeCounts.get(edgeKey)!.total += 1;
+        }
+      });
+
+      // Step 3: CREATE EDGES with offset information for parallel rendering
+      selectedParts.forEach((partNumber, partIdx) => {
+        const flow = partFlowsMap.get(partNumber);
+        if (!flow) return;
+
+        const lineColor = LINE_COLORS[partIdx % LINE_COLORS.length];
+
+        for (let i = 0; i < flow.length - 1; i++) {
+          const currentKey = flow[i].nodeKey;
+          const nextKey = flow[i + 1].nodeKey;
+          
+          const currentNode = uniqueNodesMap.get(currentKey);
+          const nextNode = uniqueNodesMap.get(nextKey);
+          
+          if (!currentNode || !nextNode) continue;
+
+          const edgeKey = `${currentNode.nodeId}->${nextNode.nodeId}`;
+          const tracker = edgeCounts.get(edgeKey)!;
+
+          newEdges.push({
+            id: `edge-${partNumber}-${i}`,
+            source: currentNode.nodeId,
+            sourceHandle: 'source-bottom',
+            target: nextNode.nodeId,
+            targetHandle: 'target-top',
+            type: 'parallel',
+            animated: false,
+            style: {
+              stroke: lineColor,
+              strokeWidth: 3,
+              strokeLinecap: 'round',
+            },
             data: {
-              processId,
-              description: processDetail.Description,
-              dataCount: processDetail.NumberOfData,
-              operatorId: processDetail.OperatorId,
-              timeStamp: processDetail.TimeStamp,
+              offsetIndex: tracker.current,
+              totalParallel: tracker.total,
               partNumber,
-              viewLevel,
-              // Assign activity based on process index (simple mapping for demo)
-              assignedActivity: allActivities[rowIndex % allActivities.length],
+              lineColor,
             },
           });
 
-          // Sequential flow edges (lighter in resource view)
-          if (rowIndex < processEntries.length - 1) {
-            const nextProcessId = processEntries[rowIndex + 1][0];
-            const nextNodeId = `${partNumber}-${nextProcessId}`;
-            
-            newEdges.push({
-              id: `flow-${nodeId}-to-${nextNodeId}`,
-              source: nodeId,
-              sourceHandle: 'source-bottom',
-              target: nextNodeId,
-              targetHandle: 'target-top',
-              type: 'default',
-              animated: false,
-              style: { stroke: '#d1d5db', strokeWidth: 1, strokeDasharray: '3,3' },
-            });
-          }
-        });
-
-        columnIndex++;
+          tracker.current += 1;
+        }
       });
 
-      // Create shared resource nodes
-      // Only show first 5 shared resources to keep visualization clean
-      sharedResources.slice(0, 5).forEach(([resourceType, activities], resourceIndex) => {
-        const xPosition = (selectedParts.length * columnWidth) / 2 + activityOffset;
-        const yPosition = startY + (resourceIndex * verticalSpacing);
+    } else {
+      // RESOURCE VIEW: Subway map by selected resource types with unique instances per part
+      if (selectedResources.length === 0) {
+        // No resources selected, show empty state
+        return;
+      }
 
-        const resourceNodeId = `resource-${resourceType}`;
+      const columnWidth = 450;
+      const verticalSpacing = 120;
+      // More gap needed in detailed state as cards get bigger
+      const startY = viewLevel === 'condensed' ? 120 : viewLevel === 'medium' ? 160 : 200;
+
+      // Map selected resources to process steps
+      const getResourceForStep = (stepIndex: number, partNumber: string) => {
+        const resourceId = selectedResources[stepIndex % selectedResources.length];
+        const resourceTemplate = availableResourceTypes.find(r => r.id === resourceId);
         
+        if (!resourceTemplate) {
+          return { id: 'unknown', name: 'Unknown', category: 'station', isShared: false, partNumber };
+        }
+
+        // Create unique resource instance per part unless it's marked as shared
+        const instanceId = resourceTemplate.isShared 
+          ? resourceId 
+          : `${resourceId}-${partNumber}`;
+        
+        const instanceName = resourceTemplate.isShared
+          ? resourceTemplate.name
+          : `${resourceTemplate.name} (Part ${partNumber})`;
+
+        return {
+          id: instanceId,
+          name: instanceName,
+          category: resourceTemplate.category,
+          isShared: resourceTemplate.isShared,
+          partNumber: resourceTemplate.isShared ? undefined : partNumber,
+        };
+      };
+
+      // Step 1: NODE UNIFICATION - Create unique resource nodes
+      const getResourceNodeKey = (resourceInfo: any) => {
+        // Use the instance ID which already contains part-specific info for unique resources
+        return resourceInfo.id;
+      };
+
+      const uniqueResourceNodesMap = new Map<string, {
+        nodeId: string;
+        resourceId: string;
+        resourceName: string;
+        stepIndex: number;
+        yPosition: number;
+        isShared: boolean;
+        partNumber?: string;
+        sharedParts: string[];
+      }>();
+
+      const partResourceFlowsMap = new Map<string, Array<{
+        processId: string;
+        resourceInfo: any;
+        detail: ProcessDetail;
+        nodeKey: string;
+      }>>();
+
+      selectedParts.forEach(partNumber => {
+        const processes = loadedProcesses.get(partNumber);
+        if (!processes) return;
+
+        const processEntries = Object.entries(processes);
+        
+        // Only use as many steps as we have selected resources
+        const stepsToUse = Math.min(processEntries.length, selectedResources.length);
+        
+        const flow = processEntries.slice(0, stepsToUse).map(([processId, detail], stepIndex) => {
+          const resourceInfo = getResourceForStep(stepIndex, partNumber);
+          const nodeKey = getResourceNodeKey(resourceInfo);
+          return {
+            processId,
+            resourceInfo,
+            detail,
+            nodeKey,
+          };
+        });
+        
+        partResourceFlowsMap.set(partNumber, flow);
+
+        // Create unified resource nodes
+        flow.forEach((step, stepIndex) => {
+          if (!uniqueResourceNodesMap.has(step.nodeKey)) {
+            const nodeId = step.nodeKey.replace(/\s+/g, '-').replace(/[()]/g, '');
+            const yPosition = startY + (stepIndex * verticalSpacing);
+            
+            uniqueResourceNodesMap.set(step.nodeKey, {
+              nodeId,
+              resourceId: step.resourceInfo.id,
+              resourceName: step.resourceInfo.name,
+              stepIndex,
+              yPosition,
+              isShared: step.resourceInfo.isShared,
+              partNumber: step.resourceInfo.partNumber,
+              sharedParts: [partNumber],
+            });
+          } else {
+            // Only add to shared parts if this is actually a shared resource
+            const existingNode = uniqueResourceNodesMap.get(step.nodeKey)!;
+            if (existingNode.isShared && !existingNode.sharedParts.includes(partNumber)) {
+              existingNode.sharedParts.push(partNumber);
+            }
+          }
+        });
+      });
+
+      const centerX = ((selectedParts.length - 1) * columnWidth) / 2 + 100;
+
+      // Create the unified resource nodes
+      uniqueResourceNodesMap.forEach((nodeInfo) => {
+        let xPosition = centerX;
+        let nodeColor = '#6b7280';
+        let sharedLineColors: string[] = [];
+        
+        if (nodeInfo.isShared) {
+          sharedLineColors = nodeInfo.sharedParts
+            .map(partNum => {
+              const partIdx = selectedParts.indexOf(partNum);
+              return partIdx !== -1 ? LINE_COLORS[partIdx % LINE_COLORS.length] : null;
+            })
+            .filter((color): color is string => color !== null);
+        } else if (nodeInfo.partNumber) {
+          const partIdx = selectedParts.indexOf(nodeInfo.partNumber);
+          if (partIdx !== -1) {
+            xPosition = partIdx * columnWidth + 100;
+            nodeColor = LINE_COLORS[partIdx % LINE_COLORS.length];
+          }
+        }
+
         newNodes.push({
-          id: resourceNodeId,
-          type: 'sharedResourceNode',
-          position: { x: xPosition, y: yPosition },
+          id: nodeInfo.nodeId,
+          type: 'subwayNode',
+          position: { x: xPosition, y: nodeInfo.yPosition },
           data: {
-            name: resourceType,
-            activities: activities.map(a => a.name),
+            processId: nodeInfo.resourceName,
+            description: nodeInfo.resourceName,
+            dataCount: 0,
+            operatorId: 0,
+            timeStamp: '',
+            partNumber: nodeInfo.isShared ? 'Shared' : nodeInfo.partNumber,
+            viewLevel,
+            lineColor: nodeColor,
+            sharedLineColors: sharedLineColors,
           },
         });
+      });
 
-        // Connect processes to this shared resource if they use activities that share this resource
-        selectedParts.forEach(partNumber => {
-          const processes = loadedProcesses.get(partNumber);
-          if (!processes) return;
-
-          const processEntries = Object.entries(processes);
-          
-          processEntries.forEach(([processId], rowIndex) => {
-            const nodeId = `${partNumber}-${processId}`;
-            const assignedActivity = allActivities[rowIndex % allActivities.length];
-            
-            // Check if this process's activity uses this resource
-            if (assignedActivity.resourceTypes.includes(resourceType)) {
-              newEdges.push({
-                id: `resource-${nodeId}-to-${resourceNodeId}`,
-                source: nodeId,
-                sourceHandle: 'source-right',
-                target: resourceNodeId,
-                targetHandle: 'target-left',
-                type: 'smoothstep',
-                style: { stroke: '#9333ea', strokeWidth: 2 },
-                animated: true,
-              });
-            }
-          });
+      // Add part labels
+      selectedParts.forEach((partNumber, partIdx) => {
+        const xPosition = partIdx * columnWidth + 100;
+        const lineColor = LINE_COLORS[partIdx % LINE_COLORS.length];
+        const partInfo = availableParts.find(p => p.PartNumber === partNumber);
+        
+        const labelContent = viewLevel === 'condensed' ? (
+          <div className="font-semibold text-sm text-gray-800" style={{ color: lineColor }}>Part {partNumber}</div>
+        ) : viewLevel === 'medium' ? (
+          <div>
+            <div className="font-semibold text-base text-gray-800" style={{ color: lineColor }}>Part {partNumber}</div>
+            {partInfo && <div className="text-xs text-gray-600 mt-1 line-clamp-1">{partInfo.Description}</div>}
+          </div>
+        ) : (
+          <div>
+            <div className="font-bold text-lg text-gray-900" style={{ color: lineColor }}>Part {partNumber}</div>
+            {partInfo && <div className="text-sm text-gray-600 mt-1">{partInfo.Description}</div>}
+            {partInfo && <div className="text-xs text-gray-500 mt-1">Version {partInfo.Version}</div>}
+          </div>
+        );
+        
+        newNodes.push({
+          id: `label-${partNumber}`,
+          type: 'default',
+          position: { x: xPosition, y: 20 },
+          data: { label: labelContent },
+          draggable: false,
+          selectable: false,
         });
+      });
+
+      // Step 2: EDGE COUNTING
+      type EdgeKey = string;
+      const resourceEdgeCounts = new Map<EdgeKey, { total: number; current: number }>();
+
+      selectedParts.forEach(partNumber => {
+        const flow = partResourceFlowsMap.get(partNumber);
+        if (!flow) return;
+
+        for (let i = 0; i < flow.length - 1; i++) {
+          const currentKey = flow[i].nodeKey;
+          const nextKey = flow[i + 1].nodeKey;
+          
+          const currentNode = uniqueResourceNodesMap.get(currentKey);
+          const nextNode = uniqueResourceNodesMap.get(nextKey);
+          
+          if (!currentNode || !nextNode) continue;
+
+          const edgeKey = `${currentNode.nodeId}->${nextNode.nodeId}`;
+          
+          if (!resourceEdgeCounts.has(edgeKey)) {
+            resourceEdgeCounts.set(edgeKey, { total: 0, current: 0 });
+          }
+          resourceEdgeCounts.get(edgeKey)!.total += 1;
+        }
+      });
+
+      // Step 3: CREATE EDGES
+      selectedParts.forEach((partNumber, partIdx) => {
+        const flow = partResourceFlowsMap.get(partNumber);
+        if (!flow) return;
+
+        const lineColor = LINE_COLORS[partIdx % LINE_COLORS.length];
+
+        for (let i = 0; i < flow.length - 1; i++) {
+          const currentKey = flow[i].nodeKey;
+          const nextKey = flow[i + 1].nodeKey;
+          
+          const currentNode = uniqueResourceNodesMap.get(currentKey);
+          const nextNode = uniqueResourceNodesMap.get(nextKey);
+          
+          if (!currentNode || !nextNode) continue;
+
+          const edgeKey = `${currentNode.nodeId}->${nextNode.nodeId}`;
+          const tracker = resourceEdgeCounts.get(edgeKey)!;
+
+          newEdges.push({
+            id: `edge-resource-${partNumber}-${i}`,
+            source: currentNode.nodeId,
+            sourceHandle: 'source-bottom',
+            target: nextNode.nodeId,
+            targetHandle: 'target-top',
+            type: 'parallel',
+            animated: false,
+            style: {
+              stroke: lineColor,
+              strokeWidth: 3,
+              strokeLinecap: 'round',
+            },
+            data: {
+              offsetIndex: tracker.current,
+              totalParallel: tracker.total,
+              partNumber,
+              lineColor,
+            },
+          });
+
+          tracker.current += 1;
+        }
       });
     }
 
     setNodes(newNodes);
     setEdges(newEdges);
-  }, [selectedParts, loadedProcesses, viewLevel, viewMode, availableParts, setNodes, setEdges]);
+  }, [selectedParts, loadedProcesses, viewLevel, viewMode, availableParts, selectedResources, availableResourceTypes, setNodes, setEdges]);
 
   // Get connected nodes for hover highlighting
   const getConnectedElements = useCallback((nodeId: string) => {
@@ -555,7 +1232,7 @@ const ActivityViewGraph: React.FC = () => {
   }, [edges, hoveredNode, getConnectedElements]);
 
   // Handle node hover events
-  const onNodeMouseEnter = useCallback((_: React.MouseEvent, node: any) => {
+  const onNodeMouseEnter = useCallback((_event: React.MouseEvent, node: Node) => {
     setHoveredNode(node.id);
   }, []);
 
@@ -564,7 +1241,7 @@ const ActivityViewGraph: React.FC = () => {
   }, []);
 
   // Handle node double-click to show info panel
-  const onNodeDoubleClick = useCallback((_: React.MouseEvent, node: any) => {
+  const onNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
     setSelectedNodeInfo(node);
     setIsInfoPanelOpen(true);
   }, []);
@@ -631,10 +1308,10 @@ const ActivityViewGraph: React.FC = () => {
           {/* View Mode Toggle */}
           <div className="px-3 py-3 border-b border-gray-200">
             <label className="text-xs font-medium text-gray-600 mb-1.5 block text-center">View Mode</label>
-            <div className="flex gap-1 bg-gray-100 rounded-md p-1">
+            <div className="flex flex-col gap-1 bg-gray-100 rounded-md p-1">
               <button
                 onClick={() => setViewMode('process')}
-                className={`flex-1 px-3 py-1.5 text-xs font-medium rounded transition-all ${
+                className={`px-3 py-1.5 text-xs font-medium rounded transition-all ${
                   viewMode === 'process'
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
@@ -643,8 +1320,18 @@ const ActivityViewGraph: React.FC = () => {
                 Process Flow
               </button>
               <button
+                onClick={() => setViewMode('activity')}
+                className={`px-3 py-1.5 text-xs font-medium rounded transition-all ${
+                  viewMode === 'activity'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Activity View
+              </button>
+              <button
                 onClick={() => setViewMode('resource')}
-                className={`flex-1 px-3 py-1.5 text-xs font-medium rounded transition-all ${
+                className={`px-3 py-1.5 text-xs font-medium rounded transition-all ${
                   viewMode === 'resource'
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
@@ -654,6 +1341,57 @@ const ActivityViewGraph: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* Resource Type Selection (only show in Resource View) */}
+          {viewMode === 'resource' && (
+            <div className="px-3 py-3 border-b border-gray-200 bg-blue-50">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-medium text-blue-900">Resources</label>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setSelectedResources(availableResourceTypes.map(r => r.id))}
+                    className="px-2 py-0.5 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded transition-all"
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={() => setSelectedResources([])}
+                    className="px-2 py-0.5 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded transition-all"
+                  >
+                    None
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {availableResourceTypes.map((resource) => (
+                  <label 
+                    key={resource.id} 
+                    className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-blue-100 cursor-pointer transition-all group"
+                  >
+                    <input 
+                      type="checkbox" 
+                      checked={selectedResources.includes(resource.id)} 
+                      onChange={() => {
+                        setSelectedResources(prev => 
+                          prev.includes(resource.id)
+                            ? prev.filter(id => id !== resource.id)
+                            : [...prev, resource.id]
+                        );
+                      }}
+                      className="w-3.5 h-3.5 rounded border border-blue-300 text-blue-600 focus:ring-0 focus:ring-offset-0" 
+                    />
+                    <div className="flex-1">
+                      <div className={selectedResources.includes(resource.id) ? 'text-xs text-blue-900 font-medium' : 'text-xs text-blue-600'}>
+                        {resource.name}
+                        {resource.isShared && <span className="ml-1 text-[10px] text-purple-600">(Shared)</span>}
+                      </div>
+                      <div className="text-[10px] text-blue-500 capitalize">{resource.category}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Layout Type */}
           <div className="px-3 py-3 border-b border-gray-200" style={{ display: 'none' }}>
@@ -692,34 +1430,49 @@ const ActivityViewGraph: React.FC = () => {
           </div>
         </div>
         
-        {/* Filter list - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-3">
-          {isLoading ? (
-            <div className="text-center py-4 text-sm text-gray-500">Loading parts...</div>
-          ) : availableParts.length === 0 ? (
-            <div className="text-center py-4 text-sm text-gray-500">No parts available</div>
-          ) : (
-            availableParts.map((part) => (
-              <label 
-                key={part.PartNumber} 
-                className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-all group"
-              >
-                <input 
-                  type="checkbox" 
-                  checked={selectedParts.includes(part.PartNumber)} 
-                  onChange={() => handlePartToggle(part.PartNumber)} 
-                  className="w-4 h-4 rounded border border-gray-300 text-gray-600 focus:ring-0 focus:ring-offset-0" 
-                />
-                <div className="flex-1">
-                  <div className={selectedParts.includes(part.PartNumber) ? 'text-sm text-gray-700 font-medium' : 'text-sm text-gray-400'}>
-                    Part {part.PartNumber}
+        {/* Filter list - Scrollable - Only show parts in non-resource views or when resources are selected */}
+        {(viewMode !== 'resource' || selectedResources.length > 0) && (
+          <div className="flex-1 overflow-y-auto p-3">
+            <div className="mb-2 px-2">
+              <label className="text-xs font-medium text-gray-600">Parts</label>
+            </div>
+            {isLoading ? (
+              <div className="text-center py-4 text-sm text-gray-500">Loading parts...</div>
+            ) : availableParts.length === 0 ? (
+              <div className="text-center py-4 text-sm text-gray-500">No parts available</div>
+            ) : (
+              availableParts.map((part) => (
+                <label 
+                  key={part.PartNumber} 
+                  className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-all group"
+                >
+                  <input 
+                    type="checkbox" 
+                    checked={selectedParts.includes(part.PartNumber)} 
+                    onChange={() => handlePartToggle(part.PartNumber)} 
+                    className="w-4 h-4 rounded border border-gray-300 text-gray-600 focus:ring-0 focus:ring-offset-0" 
+                  />
+                  <div className="flex-1">
+                    <div className={selectedParts.includes(part.PartNumber) ? 'text-sm text-gray-700 font-medium' : 'text-sm text-gray-400'}>
+                      Part {part.PartNumber}
+                    </div>
+                    <div className="text-xs text-gray-500 line-clamp-1">{part.Description}</div>
                   </div>
-                  <div className="text-xs text-gray-500 line-clamp-1">{part.Description}</div>
-                </div>
-              </label>
-            ))
-          )}
-        </div>
+                </label>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Empty state for resource view when no resources selected */}
+        {viewMode === 'resource' && selectedResources.length === 0 && (
+          <div className="flex-1 flex items-center justify-center p-6">
+            <div className="text-center">
+              <div className="text-sm text-gray-500 mb-2">No resources selected</div>
+              <div className="text-xs text-gray-400">Select resources above to view the flow</div>
+            </div>
+          </div>
+        )}
       </div>
       )}
 
@@ -734,6 +1487,7 @@ const ActivityViewGraph: React.FC = () => {
           onNodeMouseLeave={onNodeMouseLeave}
           onNodeDoubleClick={onNodeDoubleClick}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           fitView
           nodesDraggable={true}
           nodesConnectable={false}
