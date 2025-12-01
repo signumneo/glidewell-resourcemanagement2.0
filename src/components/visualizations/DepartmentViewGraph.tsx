@@ -21,12 +21,7 @@ const ENV_CONFIG = {
     baseUrl: 'https://fmmmes-service.unsdev.glidewellengineering.com',
     clientId: '6l2ch9ogih7g34dpdqn8h105t6',
     mesType: 'FmmMES',
-  },
-  'fmmmes-dev': {
-    baseUrl: 'https://fmmmes-service.unsdev.glidewellengineering.com',
-    clientId: '5o44pb3bp05kejsbd6lro327bl',
-    mesType: 'FmmMES',
-  },
+  }, 
   '3dpmes-dev': {
     baseUrl: 'https://3dpmes-service.unsdev.glidewellengineering.com',
     clientId: '6j3rjurdv7hf2028ho83ssntkk',

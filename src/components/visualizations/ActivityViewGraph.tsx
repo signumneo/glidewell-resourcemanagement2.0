@@ -332,6 +332,11 @@ const ActivityViewGraph: React.FC = () => {
           { PartNumber: '1003', Version: '1.2', Description: 'Implant Abutment - Titanium', Quantity: '100' },
           { PartNumber: '1004', Version: '2.0', Description: 'Orthodontic Bracket Set', Quantity: '200' },
           { PartNumber: '1005', Version: '1.5', Description: 'Veneer - Porcelain', Quantity: '75' },
+          { PartNumber: '1006', Version: '1.0', Description: 'Dental Inlay - Composite', Quantity: '60' },
+          { PartNumber: '1007', Version: '2.1', Description: 'Full Arch Bridge - Zirconia', Quantity: '15' },
+          { PartNumber: '1008', Version: '1.8', Description: 'Temporary Crown - PMMA', Quantity: '120' },
+          { PartNumber: '1009', Version: '1.0', Description: 'Denture Base - Acrylic', Quantity: '40' },
+          { PartNumber: '1010', Version: '3.0', Description: 'Custom Tray - Impression', Quantity: '90' },
         ];
 
         // Create mock process data for each test part with complex flows (loops, rework, branches)
